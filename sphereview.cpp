@@ -283,13 +283,17 @@ SphereServerItem::SphereServerItem(const QString &name, const QRectF &rect, NetS
 
     QImage img(pictureName);
 
-    this->setPos(0, 0);
+    this->setPos(_rec.x(), _rec.y());
     this->setPixmap(QPixmap::fromImage(img));
 
 }
 
 void SphereServerItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+
+    QGraphicsPixmapItem::paint(painter, option, widget);
+
+
     /*
     //QGraphicsRectItem::paint(painter, option);
 

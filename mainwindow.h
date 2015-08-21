@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "spherewiew.h"
+#include "sphereview.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,7 +19,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    SphereWiew *_sphereView;
+    SphereView *_sphereView;
 };
 
 #endif // MAINWINDOW_H

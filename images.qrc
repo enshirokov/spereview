@@ -1,5 +1,14 @@
 <RCC>
     <qresource prefix="/">
-        <file>images/antenna.png</file>
+        <file>images/armOFFLINE.png</file>
+        <file>images/armONLINE.png</file>
+        <file>images/armUNKNOWN.png</file>
+        <file>images/managerONLINE.png</file>
+        <file>images/pausOFFLINE.png</file>
+        <file>images/pausONLINE.png</file>
+        <file>images/pausUNKNOWN.png</file>
+        <file>images/serverONLINE.png</file>
+        <file>images/serverUNKNOWN.png</file>
+        <file>images/serverOFFLINE.png</file>
     </qresource>
 </RCC>

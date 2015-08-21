@@ -14,10 +14,10 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    spherewiew.cpp
+    sphereview.cpp
 
 HEADERS  += mainwindow.h \
-    spherewiew.h
+    sphereview.h
 
 FORMS    += mainwindow.ui
 

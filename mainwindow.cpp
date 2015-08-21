@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    _sphereView = new SphereWiew();
+    _sphereView = new SphereView();
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(_sphereView);
@@ -21,10 +21,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     setCentralWidget(centralWgt);
 
-    _sphereView->addItem("Server1", true);
-    _sphereView->addItem("Server2", true);
-    _sphereView->addItem("Server3", false);
-    _sphereView->addItem("Server4", true);
+    QString str = "Server1;3;1\nServer2;3;0\nServer3;3;1\nServer4;3;1\nManager;2;0\nArm;0;1\nPaus;1;1";
+    _sphereView->setData(str);
+
 }
 
 MainWindow::~MainWindow()

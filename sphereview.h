@@ -5,7 +5,7 @@
 #include <QGraphicsPixmapItem>
 #include <QWheelEvent>
 
-const int ITEM_SIZE = 100;
+
 
 enum SphereHostType
 {
@@ -23,12 +23,14 @@ enum NetStatus
     NET_STATUS_INVALID
 };
 
-class SphereView : public QGraphicsView
+class SphereItem;
+
+class TopologyViewer : public QGraphicsView
 {
     Q_OBJECT
 public:
-    explicit SphereView(QWidget *parent = 0);
-    ~SphereView();
+    explicit TopologyViewer(QWidget *parent = 0);
+    ~TopologyViewer();
 
     void setData(QString data);
 
@@ -36,95 +38,57 @@ private:
     void resizeEvent (QResizeEvent* event);
     void wheelEvent(QWheelEvent*);
 
-    void addServerItem(const QString &name, NetStatus status);
-    void addManagerItem(const QString &name, NetStatus status);
-    void addArmItem(const QString &name, NetStatus status);
-    void addPausItem(const QString &name, NetStatus status);
+
+    void addManagerItem(const QString &name, NetStatus status, QGraphicsItemGroup *group);
+    void addServerItem(const QString &name, NetStatus status, QGraphicsItemGroup *group);
+    void addArmItem(const QString &name, NetStatus status, QGraphicsItemGroup *group);
+    void addPausItem(const QString &name, NetStatus status, QGraphicsItemGroup *group);
+
+    QGraphicsPathItem* drawConnection(const QPointF &from, const QPointF &to);
+    void createConnection(QGraphicsItemGroup *group, QGraphicsItemGroup *item);
 
 signals:
 
 public slots:
 
 private:
+    qreal scaleFactor;
+
     QGraphicsScene* _scene;
-    QGraphicsItemGroup* _group;
+    QGraphicsItemGroup* _groupCenter;
+    QGraphicsItemGroup* _groupRight;
+    QGraphicsItemGroup* _groupLeft;
 
-    double x0;
-    double y0;
-    double x1;
-    double y1;
-    double x2;
-    double y2;
+    double xLeft; // left gtoup
+    double yLeft;
+    double xCenter; // central group
+    double yCenter;
+    double xRight; // right group
+    double yRight;
 };
 
-
-class SphereServerItem : public QGraphicsPixmapItem
+class SphereItem : public QGraphicsItem
 {
     //Q_OBJECT
 public:
-    explicit SphereServerItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent = 0);
+    explicit SphereItem(const QString &name, const QRectF &rect, const QString &img, QGraphicsItem *parent = 0);
+
+    QPointF connectPointLeft();
+    QPointF connectPointRight();
+    QPointF center();
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-    //void mouseMoveEvent();
+    QRectF boundingRect() const;
+    QPainterPath shape() const;
+
 
 
 private:
     QString _name;
-    NetStatus _status;
-
+    QString _img;
     QRectF _rec;
 };
 
-class SphereManagerItem : public QGraphicsPixmapItem
-{
-    //Q_OBJECT
-public:
-    explicit SphereManagerItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent = 0);
-
-protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-    //void mouseMoveEvent();
-
-private:
-    QString _name;
-    NetStatus _status;
-
-    QRectF _rec;
-};
-
-class SphereArmItem : public QGraphicsPixmapItem
-{
-    //Q_OBJECT
-public:
-    explicit SphereArmItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent = 0);
-
-protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-    //void mouseMoveEvent();
-
-private:
-    QString _name;
-    NetStatus _status;
-
-    QRectF _rec;
-};
-
-class SpherePausItem : public QGraphicsPixmapItem
-{
-    //Q_OBJECT
-public:
-    explicit SpherePausItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent = 0);
-
-protected:
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
-    //void mouseMoveEvent();
-
-private:
-    QString _name;
-    NetStatus _status;
-
-    QRectF _rec;
-};
 
 #endif // SPHEREWIEW_H

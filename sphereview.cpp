@@ -1,110 +1,118 @@
 #include "sphereview.h"
 #include <QGraphicsRectItem>
-#include <QDebug>
+#include <qDebug>
 #include <QStyleOptionGraphicsItem>
+#include <QGraphicsSceneMouseEvent>
 
-SphereView::SphereView(QWidget *parent)
+const int ITEM_SIZE = 100;
+const int SCENE_SIZE_X = 500;
+const int SCENE_SIZE_Y = 500;
+const int OFFSET = 40;
+const double SCALE_LIMIT = 1;
+const double SCALE_FACTOR = 0.2;
+
+TopologyViewer::TopologyViewer(QWidget *parent)
     : QGraphicsView(parent),
-      x0(0), y0(0),
-      x1(300), y1(0),
-      x2(600), y2(0)
+      scaleFactor(SCALE_LIMIT)
 {
-    //this->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    xLeft = 0;
+    yLeft = 0;
+
+    xCenter = SCENE_SIZE_X/2;
+    yCenter = SCENE_SIZE_Y/2;
+
+    xRight = SCENE_SIZE_X;
+    yRight = 0;
+
 
     _scene = new QGraphicsScene;
-    //_scene->setSceneRect(QRectF(0, 0, this->width(), this->height()));
     this->setScene(_scene);
 
-    _group = _scene->createItemGroup(QList<QGraphicsItem*>());
-    //_group->setX(30);
+    //this->setResizeAnchor(QGraphicsView::NoAnchor);
+    //this->setAlignment(Qt::AlignCenter);
 
-    setBackgroundBrush(QBrush(Qt::gray, Qt::SolidPattern));
+    //this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    //this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
-//    this->setHorizontalScrollBarPolicy ( Qt::ScrollBarAlwaysOn );
-//    this->setVerticalScrollBarPolicy ( Qt::ScrollBarAlwaysOff );
+    _groupLeft = _scene->createItemGroup(QList<QGraphicsItem*>());
+    _groupLeft->setX(xLeft);
+    _groupLeft->setY(yLeft);
+    _groupCenter = _scene->createItemGroup(QList<QGraphicsItem*>());
+    _groupCenter->setX(xCenter);
+    _groupCenter->setY(yCenter);
+    _groupRight = _scene->createItemGroup(QList<QGraphicsItem*>());
+    _groupRight->setX(xRight);
+    _groupRight->setY(yRight);
 
-    //fitInView(_scene->sceneRect());
+    setBackgroundBrush(QBrush(QColor(80, 80, 80), Qt::SolidPattern));
 
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(0, 0, rec.width(), rec.height());
     setRenderHints(QPainter::Antialiasing); // item smoothing
+    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    setResizeAnchor(QGraphicsView::AnchorUnderMouse);
 
-    //this->setHorizontalScrollBarPolicy ( Qt::ScrollBarAlwaysOn );
-    //this->setVerticalScrollBarPolicy ( Qt::ScrollBarAlwaysOn );
-
+    setDragMode(ScrollHandDrag);
+    //setInteractive(false);
 
 }
 
-SphereView::~SphereView()
+TopologyViewer::~TopologyViewer()
 {
-    _scene->destroyItemGroup(_group);
+    _scene->destroyItemGroup(_groupLeft);
+    _scene->destroyItemGroup(_groupCenter);
+    _scene->destroyItemGroup(_groupRight);
 }
 
-void SphereView::resizeEvent (QResizeEvent* event)
+void TopologyViewer::resizeEvent (QResizeEvent* event)
 {
-    //fitInView(_scene->sceneRect());
+    setSceneRect(_scene->itemsBoundingRect());
 }
 
-void SphereView::wheelEvent(QWheelEvent * event)
+void TopologyViewer::wheelEvent(QWheelEvent * event)
 {
+
     int angle = event->delta();
-
-    qDebug() << "angle = " << angle;
-
 
     if(angle > 0){
 
-        /*
-        QMatrix matrix;
-        matrix.scale(1 + 0.2, 1 + 0.2);
-
-        _group->setMatrix(matrix);
-        */
-        this->scale(1 + 0.2, 1 + 0.2);
+        scaleFactor += SCALE_FACTOR;
+        this->scale(1.2, 1.2);
 
     }
     else{
+        if(scaleFactor > SCALE_LIMIT){
+            scaleFactor -= SCALE_FACTOR;
+            this->scale(1/1.2, 1/1.2);
+        }
 
-        /*
-        QMatrix matrix;
-        matrix.scale(1 - 0.2, 1 - 0.2);
-
-        _group->setMatrix(matrix);
-        */
-        this->scale(1 - 0.2, 1 - 0.2);
-
-
-
-}
-
-    QRectF rec = _group->sceneBoundingRect();
-    _scene->setSceneRect(0, 0, rec.width(), this->height());
-
+    }
 
 }
 
 
-void SphereView::setData(QString data)
+void TopologyViewer::setData(QString data)
 {
     QStringList list = data.split("\n");
 
 
     for(auto x: list){
 
+        if(x.size() < 1)
+            continue;
+
         QStringList unit = x.split(";");
 
         switch(unit.at(1).toInt()){
         case SphereHostType::HOST_TYPE_ARM:
-            addArmItem(unit.at(0), (NetStatus)unit.at(2).toInt());
+            addArmItem(unit.at(0), (NetStatus)unit.at(2).toInt(), _groupLeft);
             break;
         case SphereHostType::HOST_TYPE_PAUS:
-            addPausItem(unit.at(0), (NetStatus)unit.at(2).toInt());
+            addPausItem(unit.at(0), (NetStatus)unit.at(2).toInt(), _groupLeft);
             break;
         case SphereHostType::HOST_TYPE_MANAGER:
-            addManagerItem(unit.at(0), (NetStatus)unit.at(2).toInt());
+            addManagerItem(unit.at(0), (NetStatus)unit.at(2).toInt(), _groupCenter);
             break;
         case SphereHostType::HOST_TYPE_SERVER:
-            addServerItem(unit.at(0), (NetStatus)unit.at(2).toInt());
+            addServerItem(unit.at(0), (NetStatus)unit.at(2).toInt(), _groupRight);
             break;
 
 
@@ -114,308 +122,211 @@ void SphereView::setData(QString data)
     }
 
 
-    _scene->setSceneRect(_scene->itemsBoundingRect());
-    //fitInView(_scene->sceneRect());
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(rec.x(), rec.y(), rec.width(), rec.height());
+    createConnection(_groupLeft, _groupCenter);
+    createConnection(_groupRight, _groupCenter);
 
 
 
-}
-
-void SphereView::addServerItem(const QString &name, NetStatus status)
-{
-    QPen pen;
-    pen.setCosmetic(true);
-
-    SphereServerItem* item = new SphereServerItem(name, QRectF(x2, y2, ITEM_SIZE, ITEM_SIZE), status);
-    //item->setPen(pen);
-    //item->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-
-    //if(status)
-    //    item->setBrush(QBrush(QColor(Qt::green)));
-    //else
-    //    item->setBrush(QBrush(QColor(Qt::red)));
-    //item->setOpacity(0.5);
-
-    //QGraphicsLineItem* line = new QGraphicsLineItem(x2, y2, x1, y1);
-    //line->setPos(x1, y1);
-    //line->moveBy(x2, y2);
-
-    _group->addToGroup(item);
-   // _group->addToGroup(line);
-
-    y2 += ITEM_SIZE + 40;
-
-    //_scene->setSceneRect(_scene->itemsBoundingRect());
-    //fitInView(_scene->sceneRect());
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(rec.x(), rec.y(), rec.width(), rec.height());
-
-
+    qDebug() << _scene->itemsBoundingRect();
 
 }
 
-void SphereView::addManagerItem(const QString &name, NetStatus status)
+QGraphicsPathItem* TopologyViewer::drawConnection(const QPointF &from, const QPointF &to)
 {
-    QPen pen;
-    pen.setCosmetic(true);
-
-    SphereManagerItem* item = new SphereManagerItem(name, QRectF(x1, y1, ITEM_SIZE, ITEM_SIZE), status);
-    //item->setPen(pen);
-    //item->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-
-    //if(status)
-    //    item->setBrush(QBrush(QColor(Qt::green)));
-    //else
-    //    item->setBrush(QBrush(QColor(Qt::red)));
-    //item->setOpacity(0.5);
-    _group->addToGroup(item);
-
-    y1 += ITEM_SIZE + 40;
-
-
-    //_scene->setSceneRect(_scene->itemsBoundingRect());
-    //fitInView(_scene->sceneRect());
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(rec.x(), rec.y(), rec.width(), rec.height());
-}
-
-void SphereView::addArmItem(const QString &name, NetStatus status)
-{
-    QPen pen;
-    pen.setCosmetic(true);
-
-    SphereArmItem* item = new SphereArmItem(name, QRectF(x0, y0, ITEM_SIZE, ITEM_SIZE), status);
-    //item->setPen(pen);
-    //item->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-   _group->addToGroup(item);
-
-   /*
-    QGraphicsLineItem* line = new QGraphicsLineItem(ITEM_SIZE, ITEM_SIZE/2, x1, y1);
-    QPen penLine;
-    penLine.setColor(Qt::green);
-    penLine.setWidth(5);
-    line->setPen(penLine);
-    _group->addToGroup(line);
-
-    */
-
-
-   QPoint point00(200, 400); // line 0
-   QPoint point01(350, 400);
-
-   QPoint point10(400, 350); // line 1
-   QPoint point11(400, 100);
-
-
-   QPainterPath path;
-   path.moveTo(point00);
-   path.lineTo(point01);
-   path.cubicTo(point01, QPoint(point01.y(), point10.x()), point10);
-   path.moveTo(point10);
-   path.lineTo(point11);
-
-   //path.cubicTo(200, 300,  300, 300,  300, 200);
-   //path.cubicTo(300, 200,  300, 100,  400, 100);
-
-   QGraphicsPathItem* p = new QGraphicsPathItem(path);
-   QPen pen2;
-   //pen2.setColor(QColor(71, 176, 43));
-   //pen2.setColor(Qt::white);
-   pen2.setWidth(10);
-   pen2.setCosmetic(true);
-   p->setPen(pen2);
-   //p->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-
-   _group->addToGroup(p);
-
-
-
-    y0 += ITEM_SIZE + 40;
-
-    //_scene->setSceneRect(_scene->itemsBoundingRect());
-    //fitInView(_scene->sceneRect());
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(rec.x(), rec.y(), rec.width(), rec.height());
-
-}
-
-void SphereView::addPausItem(const QString &name, NetStatus status)
-{
-    QPen pen;
-    pen.setCosmetic(true);
-
-    SpherePausItem* item = new SpherePausItem(name, QRectF(x0, y0, ITEM_SIZE, ITEM_SIZE), status);
-    //item->setPen(pen);
-    //item->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-     _group->addToGroup(item);
-
-   // QGraphicsLineItem* line = new QGraphicsLineItem(x0 + ITEM_SIZE/2, y0 + ITEM_SIZE/2, x1, y1);
-   // _group->addToGroup(line);
-
-    y0 += ITEM_SIZE + 40;
-
-
-    //_scene->setSceneRect(_scene->itemsBoundingRect());
-    //fitInView(_scene->sceneRect());
-    //QRectF rec = _scene->sceneRect();
-    //this->setViewportMargins(rec.x(), rec.y(), rec.width(), rec.height());
-}
-
-// SphereServerItem --------------------------------
-
-SphereServerItem::SphereServerItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent)
-    : QGraphicsPixmapItem(parent),
-      _name(name),
-      _status(status),
-      _rec(rect)
-{
-
-    QString pictureName = "";
-
-    if(_status == NetStatus::NET_STATUS_ONLINE)
-        pictureName = ":/images/serverONLINE.png";
-    else if(_status == NetStatus::NET_STATUS_OFFLINE)
-        pictureName = ":/images/serverOFFLINE.png";
-    else if(_status == NetStatus::NET_STATUS_INVALID)
-        pictureName = ":/images/serverUNKNOWN.png";
-
-    QImage img(pictureName);
-
-    this->setPos(_rec.x(), _rec.y());
-    this->setPixmap(QPixmap::fromImage(img));
-
-}
-
-void SphereServerItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-
-    QGraphicsPixmapItem::paint(painter, option, widget);
-
-
-    /*
-    //QGraphicsRectItem::paint(painter, option);
-
-    QPen pen;
-    pen.setColor(Qt::black);
-
-    //QRectF rec = option->exposedRect;
-
-    qDebug() << "rec.x = " << _rec.x() << "rec.y = " << _rec.y();
-
-    painter->setPen(pen);
-
-    QString pictureName = "";
-
-    if(_status == NetStatus::NET_STATUS_ONLINE)
-        pictureName = ":/images/serverONLINE.png";
-    else if(_status == NetStatus::NET_STATUS_OFFLINE)
-        pictureName = ":/images/serverOFFLINE.png";
-    else if(_status == NetStatus::NET_STATUS_INVALID)
-        pictureName = ":/images/serverUNKNOWN.png";
-
-    QImage img(pictureName);
-    //img.scaled(_rec.width(), _rec.height());
-
-    painter->drawImage(_rec.x() + 10, _rec.y() + 20, img);
-    painter->drawText(QRectF(_rec.x() + 10, _rec.y() + 10, _rec.height(), _rec.width()), _name);
-
-    //this->setPixmap(QPixmap::fromImage(img));
-    //this->setPos(0, 0);
-
+/*
+    if(from.x() > to.x())
+        return nullptr;
 */
 
+    int mX = /*abs*/((to.x() - from.x())/2); // середина отрезка между точками p0 и p1 по оси x
+    int mY = /*abs*/((to.y() - from.y())/2); // середина отрезка между точками p0 и p1 по оси y
+
+    QPoint p0 = QPoint(from.x() + mX, from.y() + mY); // центр
+
+    QPainterPath path;
+
+    path.moveTo(from);
+
+    path.cubicTo(QPoint(p0.x(), from.y()), QPoint(p0.x(), to.y()), to);
+
+    return new QGraphicsPathItem(path);
+}
+
+void TopologyViewer::createConnection(QGraphicsItemGroup *group, QGraphicsItemGroup *groupCenter)
+{
+    if(groupCenter->childItems().empty()){
+        // сообщить об ошибке
+        return;
+    }
+
+    SphereItem* nodeCentral = (SphereItem*)groupCenter->childItems().at(0);
+
+    for(auto x : group->childItems()){
+
+        SphereItem* node = (SphereItem*)x;
+
+        QPointF pointFrom = node->center();
+        QPointF pointTo = nodeCentral->center();
+
+        QGraphicsPathItem* p = nullptr;
+
+        if(pointFrom.x() < pointTo.x())
+            p = drawConnection(node->connectPointRight(), nodeCentral->connectPointLeft());
+        else
+            p = drawConnection(nodeCentral->connectPointRight(), node->connectPointLeft());
+
+
+        if(p != nullptr){
+
+            QPen pen;
+            pen.setWidth(2);
+            pen.setColor(QColor(0, 180, 180));
+            pen.setCosmetic(true);
+            p->setPen(pen);
+
+            group->addToGroup(p);
+        }
+    }
+}
+
+void TopologyViewer::addServerItem(const QString &name, NetStatus status, QGraphicsItemGroup *group)
+{
+
+    QString pictureName = "";
+
+    if (status == NetStatus::NET_STATUS_ONLINE)
+        pictureName = ":/images/sphere_server_online_48.png";
+    else if (status == NetStatus::NET_STATUS_OFFLINE)
+        pictureName = ":/images/sphere_server_offline_48.png";
+    else if (status == NetStatus::NET_STATUS_INVALID)
+        pictureName = ":/images/sphere_server_unk_48.png.png";
+
+
+    SphereItem* item = new SphereItem(name, QRectF(xRight, yRight, ITEM_SIZE, ITEM_SIZE), pictureName);
+    group->addToGroup(item);
+
+    yRight += ITEM_SIZE + OFFSET;
 
 }
 
-// SphereManagerItem --------------------------------
+void TopologyViewer::addManagerItem(const QString &name, NetStatus status, QGraphicsItemGroup *group)
+{
+    QString pictureName = "";
 
-SphereManagerItem::SphereManagerItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent)
-    : QGraphicsPixmapItem(parent),
+    if (status == NetStatus::NET_STATUS_ONLINE)
+        pictureName = ":/images/sphere_manager_offline_48.png";
+    else if (status == NetStatus::NET_STATUS_OFFLINE)
+        pictureName = ":/images/sphere_manager_online_48.png";
+    else if (status == NetStatus::NET_STATUS_INVALID)
+        pictureName = ":/images/sphere_manager_unk_48.png";
+
+    SphereItem* item = new SphereItem(name, QRectF(xCenter, yCenter, ITEM_SIZE, ITEM_SIZE), pictureName);
+    group->addToGroup(item);
+
+    yCenter += ITEM_SIZE + OFFSET;
+
+}
+
+void TopologyViewer::addArmItem(const QString &name, NetStatus status, QGraphicsItemGroup *group)
+{
+    QString pictureName = "";
+
+    if (status == NetStatus::NET_STATUS_ONLINE)
+        pictureName = ":/images/sphere_arm_online_48.png";
+    else if (status == NetStatus::NET_STATUS_OFFLINE)
+        pictureName = ":/images/sphere_arm_offline_48.png";
+    else if (status == NetStatus::NET_STATUS_INVALID)
+        pictureName = ":/images/sphere_arm_unk_48.png";
+
+   SphereItem* item = new SphereItem(name, QRectF(xLeft, yLeft, ITEM_SIZE, ITEM_SIZE), pictureName);
+   group->addToGroup(item);
+
+   yLeft += ITEM_SIZE + OFFSET;
+
+}
+
+void TopologyViewer::addPausItem(const QString &name, NetStatus status, QGraphicsItemGroup *group)
+{
+    QString pictureName = "";
+
+    if (status == NetStatus::NET_STATUS_ONLINE)
+        pictureName = ":/images/sphere_paus_online_48.png";
+    else if (status == NetStatus::NET_STATUS_OFFLINE)
+        pictureName = ":/images/sphere_paus_offline_48.png";
+    else if (status == NetStatus::NET_STATUS_INVALID)
+        pictureName = ":/images/sphere_paus_unk_48.png";
+
+    SphereItem* item = new SphereItem(name, QRectF(xLeft, yLeft, ITEM_SIZE, ITEM_SIZE), pictureName);
+    group->addToGroup(item);
+
+    yLeft += ITEM_SIZE + OFFSET;
+
+}
+
+// SphereItem --------------------------------
+
+SphereItem::SphereItem(const QString &name, const QRectF &rect, const QString &img, QGraphicsItem *parent)
+    : QGraphicsItem(parent),
       _name(name),
-      _status(status),
-      _rec(rect)
+      _rec(rect),
+      _img(img)
 {
 
+
+    //setPos(_rec.x(), _rec.y());
 }
 
-void SphereManagerItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void SphereItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    //QGraphicsRectItem::paint(painter, option);
-
     QPen pen;
     pen.setColor(Qt::black);
 
-    //QRectF rec = option->exposedRect;
-
-    qDebug() << "rec.x = " << _rec.x() << "rec.y = " << _rec.y();
-
-    QImage img(":/images/managerONLINE.png");
-    img.scaled(_rec.width(), _rec.height());
-
     painter->setPen(pen);
-    painter->drawText(QRectF(_rec.x() + 10, _rec.y() + 10, _rec.height(), _rec.width()), _name);
-    painter->drawImage(_rec.x() + 10, _rec.y() + 20, img);
 
+    painter->drawImage(_rec, QImage(_img));
+    painter->drawText(QRectF(_rec.x(), _rec.y() + _rec.width(), _rec.width(), _rec.height()), _name);
 
 }
 
-// SphereArmItem --------------------------------
 
-SphereArmItem::SphereArmItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent)
-    : QGraphicsPixmapItem(parent),
-      _name(name),
-      _status(status),
-      _rec(rect)
+QRectF SphereItem::boundingRect() const
 {
+    QPointF realX = /*mapToScene*/(QPoint(_rec.x(), _rec.y()));
+    QPointF realY = /*mapToScene*/(QPoint(_rec.width(), _rec.height()));
 
+    QRectF recTmp  = QRectF(realX.x(), realX.y(), realY.x(), realY.y());
+
+    return recTmp;
 }
 
-void SphereArmItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+
+QPainterPath SphereItem::shape() const
 {
-    //QGraphicsRectItem::paint(painter, option);
-
-    QPen pen;
-    pen.setColor(Qt::black);
-
-    //QRectF rec = option->exposedRect;
-
-    qDebug() << "rec.x = " << _rec.x() << "rec.y = " << _rec.y();
-
-    painter->setPen(pen);
-    painter->drawText(QRectF(_rec.x() + 10, _rec.y() + 10, _rec.height(), _rec.width()), _name);
-    painter->drawImage(_rec.x() + 10, _rec.y() + 20, QImage(":/images/armONLINE.png"));
-
-
+    QRectF rect = boundingRect();
+    QPainterPath path;
+    path.addRoundedRect(rect,0,0);
+    return path;
 }
 
-// SpherePausItem --------------------------------
-
-SpherePausItem::SpherePausItem(const QString &name, const QRectF &rect, NetStatus status, QGraphicsItem *parent)
-    : QGraphicsPixmapItem(parent),
-      _name(name),
-      _status(status),
-      _rec(rect)
+QPointF SphereItem::connectPointRight()
 {
+    QPointF point = mapToScene(QPointF(_rec.x() + _rec.width(), (_rec.y() + _rec.height()/2)));
 
+    return point;
 }
 
-void SpherePausItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+QPointF SphereItem::connectPointLeft()
 {
-    //QGraphicsRectItem::paint(painter, option);
+    QPointF point = mapToScene(QPointF(_rec.x(), (_rec.y() +_rec.height()/2)));
 
-    QPen pen;
-    pen.setColor(Qt::black);
-
-    //QRectF rec = option->exposedRect;
-
-    qDebug() << "rec.x = " << _rec.x() << "rec.y = " << _rec.y();
-
-    painter->setPen(pen);
-    painter->drawText(QRectF(_rec.x() + 10, _rec.y() + 10, _rec.height(), _rec.width()), _name);
-    painter->drawImage(_rec.x() + 10, _rec.y() + 20, QImage(":/images/pausONLINE.png"));
-
-
+    return point;
 }
+
+QPointF SphereItem::center()
+{
+    QPointF point = mapToScene(QPointF((_rec.x() + _rec.width()/2), (_rec.y() + _rec.height()/2)));
+
+    return point;
+}
+
 

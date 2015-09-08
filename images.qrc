@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>images/armOFFLINE.png</file>
         <file>images/armONLINE.png</file>
         <file>images/armUNKNOWN.png</file>
         <file>images/managerONLINE.png</file>
@@ -10,5 +9,21 @@
         <file>images/serverONLINE.png</file>
         <file>images/serverUNKNOWN.png</file>
         <file>images/serverOFFLINE.png</file>
+        <file>images/sphere_arm_offline_48.png</file>
+        <file>images/sphere_arm_online_48.png</file>
+        <file>images/sphere_arm_unk_48.png</file>
+        <file>images/sphere_arm_warning_48.png</file>
+        <file>images/sphere_manager_offline_48.png</file>
+        <file>images/sphere_manager_online_48.png</file>
+        <file>images/sphere_manager_unk_48.png</file>
+        <file>images/sphere_manager_warning_48.png</file>
+        <file>images/sphere_paus_offline_48.png</file>
+        <file>images/sphere_paus_online_48.png</file>
+        <file>images/sphere_paus_unk_48.png</file>
+        <file>images/sphere_paus_warning_48.png</file>
+        <file>images/sphere_server_offline_48.png</file>
+        <file>images/sphere_server_online_48.png</file>
+        <file>images/sphere_server_unk_48.png</file>
+        <file>images/sphere_server_warning_48.png</file>
     </qresource>
 </RCC>

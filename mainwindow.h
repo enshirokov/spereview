@@ -19,7 +19,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    SphereView *_sphereView;
+    TopologyViewer *_sphereView;
 };
 
 #endif // MAINWINDOW_H
